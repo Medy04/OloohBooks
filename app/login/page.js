@@ -4,9 +4,6 @@ import { Suspense, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 function LoginContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
