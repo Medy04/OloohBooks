@@ -89,7 +89,7 @@ export default function SettingsVatPage() {
             <input type="date" className="w-full rounded-md border px-3 py-2 bg-transparent" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm text-neutral-600 mb-1">Valide jusqu'au (optionnel)</label>
+            <label className="block text-sm text-neutral-600 mb-1">Valide jusqu&apos;au (optionnel)</label>
             <input type="date" className="w-full rounded-md border px-3 py-2 bg-transparent" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
           </div>
         </div>

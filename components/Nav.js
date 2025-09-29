@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -18,7 +19,7 @@ export default function Nav() {
     <nav className="border-b border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="OloohBooks" className="h-6 w-6 object-contain" />
+          <Image src="/logo.png" alt="OloohBooks" width={24} height={24} />
           <div className="font-semibold">OloohBooks</div>
         </Link>
         <ul className="flex items-center gap-4 text-sm">

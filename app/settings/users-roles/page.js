@@ -58,7 +58,7 @@ export default function SettingsUsersRolesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Paramètres • Utilisateurs & Rôles</h1>
-        <p className="text-sm text-neutral-500 mt-1">Gérez la liste des rôles (ex: Admin, Vendeur). L'association utilisateurs↔rôles peut être ajoutée plus tard.</p>
+        <p className="text-sm text-neutral-500 mt-1">Gérez la liste des rôles (ex: Admin, Vendeur). L&apos;association utilisateurs↔rôles peut être ajoutée plus tard.</p>
         <div className="mt-3">
           <Link href="/settings" className="px-3 py-1.5 rounded-md border">← Retour</Link>
         </div>

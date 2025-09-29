@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -229,7 +230,7 @@ export default function SalesPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Ventes</h1>
-        <p className="text-sm text-neutral-500">Enregistrez une vente en sélectionnant l'article, la variante, le canal, le lieu et le mode de paiement.</p>
+        <p className="text-sm text-neutral-500">Enregistrez une vente en sélectionnant l&apos;article, la variante, le canal, le lieu et le mode de paiement.</p>
       </div>
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
@@ -346,7 +347,7 @@ export default function SalesPage() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <div className="text-xs text-neutral-500">Équiv. EUR</div>
-                  <div className="text-sm font-medium">{toEUR(total, currency).toFixed(2)} €</div>
+                  <div className="text-sm font-medium">{totalEUR.toFixed(2)} €</div>
                 </div>
                 {!stockOk && (
                   <div className="text-xs text-red-600 mt-1">Stock insuffisant pour cette quantité.</div>
