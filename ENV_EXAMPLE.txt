@@ -1,0 +1,16 @@
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# Optionnel: si vous utilisez RLS, configurez vos politiques sur la table 'channels'.
+# Exemple de structure de table (SQL):
+# create table if not exists public.channels (
+#   id uuid primary key default gen_random_uuid(),
+#   name text not null unique,
+#   type text check (type in ('BOUTIQUE','EN_LIGNE','POP_UP')),
+#   active boolean not null default true
+# );
+# alter table public.channels enable row level security;
+# create policy "channels_select" on public.channels for select using (true);
+# create policy "channels_insert" on public.channels for insert with check (true);
+# create policy "channels_update" on public.channels for update using (true);
+# create policy "channels_delete" on public.channels for delete using (true);
