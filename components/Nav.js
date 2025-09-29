@@ -18,6 +18,11 @@ export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Hide navigation on the login page
+  if (pathname === "/login") {
+    return null;
+  }
+
   async function logout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -39,8 +44,10 @@ export default function Nav() {
                 <Link
                   href={l.href}
                   className={
-                    "px-2 py-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-900 " +
-                    (active ? "bg-neutral-100 dark:bg-neutral-900 font-medium" : "")
+                    "px-2 py-1 rounded-md transition-colors " +
+                    (active
+                      ? "text-[#DAA520] border-b-2 border-[#DAA520] font-medium"
+                      : "hover:text-[#DAA520]")
                   }
                 >
                   {l.label}
@@ -50,7 +57,10 @@ export default function Nav() {
           })}
         </ul>
         <div className="flex-1" />
-        <button onClick={logout} className="text-sm px-3 py-1.5 rounded-md border hover:bg-neutral-100 dark:hover:bg-neutral-900">
+        <button
+          onClick={logout}
+          className="text-sm px-3 py-1.5 rounded-md border border-[#C5A029] bg-[#C5A029] text-white hover:bg-[#a78a22]"
+        >
           Se déconnecter
         </button>
       </div>

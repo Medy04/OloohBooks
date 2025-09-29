@@ -10,7 +10,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const sp = useSearchParams();
-  const redirect = sp.get("redirect") || "/";
+  const redirectParam = sp.get("redirect");
+  const redirect = redirectParam && redirectParam !== "/login" ? redirectParam : "/";
 
   async function submit(e) {
     e.preventDefault();
@@ -24,7 +25,10 @@ export default function LoginPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || "Erreur");
-      router.replace(redirect);
+      // Full reload so the middleware on the next request sees the freshly set cookie
+      const url = new URL(redirect, window.location.origin);
+      url.searchParams.set('logged', '1');
+      window.location.replace(url.toString());
     } catch (e) {
       setError(e.message || "Code incorrect");
     } finally {
@@ -52,7 +56,10 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button disabled={loading} className="w-full rounded-md bg-black text-white py-2 disabled:opacity-50">
+          <button
+            disabled={loading}
+            className="w-full rounded-md border border-[#C5A029] bg-[#C5A029] text-white py-2 disabled:opacity-50 hover:bg-[#a78a22]"
+          >
             {loading ? "Connexion…" : "Se connecter"}
           </button>
         </form>
