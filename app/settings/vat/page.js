@@ -105,7 +105,7 @@ export default function SettingsVatPage() {
               <th className="p-3 text-left">Lieu</th>
               <th className="p-3 text-left">Taux</th>
               <th className="p-3 text-left">Valide du</th>
-              <th className="p-3 text-left">Valide jusqu'au</th>
+              <th className="p-3 text-left">Valide jusqu&apos;au</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
