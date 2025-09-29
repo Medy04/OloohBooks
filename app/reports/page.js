@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { fromXOFtoEUR } from "@/lib/currency";
 
@@ -19,7 +19,7 @@ export default function ReportsPage() {
     return { start: start.toISOString(), end: end.toISOString() };
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { start, end } = monthRange(year, month);
@@ -48,11 +48,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [month, year, location]);
 
   useEffect(() => {
     load();
-  }, [month, year, location]);
+  }, [load]);
 
   // Realtime: refresh on sales changes
   useEffect(() => {

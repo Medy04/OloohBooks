@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { LOCATIONS, CURRENCIES, EXPENSE_CATEGORIES } from "@/lib/constants";
 
@@ -116,7 +116,7 @@ export default function ExpensesPage() {
     }
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { start, end } = monthRange(year, month);
@@ -133,9 +133,9 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [month, year]);
 
-  useEffect(() => { load(); }, [month, year]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     const ch = supabase
@@ -143,7 +143,7 @@ export default function ExpensesPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => load())
       .subscribe();
     return () => supabase.removeChannel(ch);
-  }, []);
+  }, [load]);
 
   async function createExpense() {
     if (!canSave) return;

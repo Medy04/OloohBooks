@@ -26,7 +26,7 @@ export default function Nav() {
   async function logout() {
     try {
       await fetch("/api/logout", { method: "POST" });
-    } catch (_) {}
+    } catch {}
     router.replace("/login");
   }
   return (

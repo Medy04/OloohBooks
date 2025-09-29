@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { LOCATIONS, CURRENCIES } from "@/lib/constants";
+import Image from "next/image";
 
 export default function ProductsPage() {
   const [open, setOpen] = useState(false);
@@ -122,7 +123,7 @@ export default function ProductsPage() {
     }
   }
 
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -151,11 +152,11 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [q, filterCategory, filterAvailability]);
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [loadProducts]);
 
   // Edit modal state
   const [editOpen, setEditOpen] = useState(false);
@@ -359,9 +360,11 @@ export default function ProductsPage() {
                 <tr key={p.id} className="border-b">
                   <td className="p-3">
                     {Array.isArray(p.photos) && p.photos[0] ? (
-                      <img
+                      <Image
                         src={p.photos[0]}
                         alt={p.name}
+                        width={48}
+                        height={48}
                         className="h-12 w-12 rounded object-cover border border-neutral-200 dark:border-neutral-800"
                       />
                     ) : (

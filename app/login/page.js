@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
   const sp = useSearchParams();
   const redirectParam = sp.get("redirect");
   const redirect = redirectParam && redirectParam !== "/login" ? redirectParam : "/";
