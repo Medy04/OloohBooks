@@ -18,6 +18,10 @@ export default function Home() {
     const end = new Date(y, m, 1);
     return { start: start.toISOString(), end: end.toISOString() };
   }
+  // Helper to format euros
+  function fmtEUR(n) {
+    return `${n.toFixed(2)} €`;
+  }
 
   async function load() {
     setLoading(true);
@@ -83,6 +87,8 @@ export default function Home() {
     return fromXOFtoEUR(xof);
   }, [expenses]);
   const marginMonthEUR = useMemo(() => revenueMonthEUR - expensesMonthEUR, [revenueMonthEUR, expensesMonthEUR]);
+  const [hoverI, setHoverI] = useState(null);
+  const [tooltip, setTooltip] = useState({ x: 0, y: 0, show: false });
 
   function daysInMonth(y, m) {
     return new Date(y, m, 0).getDate();
@@ -103,7 +109,8 @@ export default function Home() {
     const rev = revXof.map((v) => fromXOFtoEUR(v));
     const exp = expXof.map((v) => fromXOFtoEUR(v));
     const mar = rev.map((v, i) => v - exp[i]);
-    return { rev, exp, mar };
+    const labels = Array.from({ length: days }, (_, i) => i + 1);
+    return { rev, exp, mar, labels };
   }, [sales, expenses, month, year]);
 
   function buildPath(values, width, height, padding) {
@@ -130,6 +137,9 @@ export default function Home() {
   ];
   return (
     <div className="space-y-6">
+      <div className="rounded-md border bg-neutral-50 dark:bg-neutral-950 p-3 text-sm">
+        <span className="font-medium">Bonjour OloohBooks admin</span>, bienvenue sur la plateforme de gestion comptable de Olooh.
+      </div>
       <div>
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
         <p className="text-sm text-neutral-500 mt-1">
@@ -183,23 +193,73 @@ export default function Home() {
           </div>
         </div>
         {(() => {
-          const W = 760, H = 220, P = 24;
+          const W = 760, H = 240, P = 30;
           const pRev = buildPath(dailySeries.rev, W, H, P);
           const pExp = buildPath(dailySeries.exp, W, H, P);
           const pMar = buildPath(dailySeries.mar, W, H, P);
           const maxAll = Math.max(pRev.maxVal, pExp.maxVal, pMar.maxVal);
+          const n = dailySeries.labels.length || 1;
+          const w = W - P * 2;
+          const h = H - P * 2;
+          const step = n > 1 ? w / (n - 1) : 0;
+          const y = (v) => P + (h - (v / (maxAll || 1)) * h);
+          const x = (i) => P + i * step;
+          const onMove = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const localX = e.clientX - rect.left;
+            const i = Math.max(0, Math.min(n - 1, Math.round((localX - P) / (step || 1))));
+            setHoverI(i);
+            setTooltip({ x: localX + 12, y: 24, show: true });
+          };
+          const onLeave = () => { setHoverI(null); setTooltip({ x: 0, y: 0, show: false }); };
+          const yticks = 4;
           return (
-            <div className="overflow-x-auto">
-              <svg width={W} height={H} className="min-w-full">
-                {/* axes simples */}
+            <div className="relative overflow-x-auto">
+              <svg width={W} height={H} className="min-w-full" onMouseMove={onMove} onMouseLeave={onLeave}>
+                {/* gridlines */}
+                {[...Array(yticks + 1)].map((_, k) => {
+                  const gy = P + (h / yticks) * k;
+                  const val = (maxAll / yticks) * (yticks - k);
+                  return (
+                    <g key={k}>
+                      <line x1={P} y1={gy} x2={W-P} y2={gy} stroke="#eee" />
+                      <text x={P - 6} y={gy + 3} fontSize="10" fill="#666" textAnchor="end">{val.toFixed(0)}</text>
+                    </g>
+                  );
+                })}
+                {/* x axis */}
                 <line x1={P} y1={H-P} x2={W-P} y2={H-P} stroke="#ddd" />
                 <line x1={P} y1={P} x2={P} y2={H-P} stroke="#ddd" />
-                {/* labels max */}
-                <text x={P} y={P-6} fontSize="10" fill="#666">max {maxAll.toFixed(2)} €</text>
+                {/* x ticks every 5 days */}
+                {dailySeries.labels.map((d, i) => (i % 5 === 0 || i === n-1) && (
+                  <g key={i}>
+                    <line x1={x(i)} y1={H-P} x2={x(i)} y2={H-P+4} stroke="#bbb" />
+                    <text x={x(i)} y={H-P+14} fontSize="10" fill="#666" textAnchor="middle">{d}</text>
+                  </g>
+                ))}
+                {/* series */}
                 <path d={pRev.d} fill="none" stroke="#059669" strokeWidth="2" />
                 <path d={pExp.d} fill="none" stroke="#e11d48" strokeWidth="2" />
                 <path d={pMar.d} fill="none" stroke="#2563eb" strokeWidth="2" />
+                {/* hover guide and points */}
+                {hoverI != null && (
+                  <g>
+                    <line x1={x(hoverI)} y1={P} x2={x(hoverI)} y2={H-P} stroke="#999" strokeDasharray="4 4" />
+                    <circle cx={x(hoverI)} cy={y(dailySeries.rev[hoverI])} r="3" fill="#059669" />
+                    <circle cx={x(hoverI)} cy={y(dailySeries.exp[hoverI])} r="3" fill="#e11d48" />
+                    <circle cx={x(hoverI)} cy={y(dailySeries.mar[hoverI])} r="3" fill="#2563eb" />
+                  </g>
+                )}
               </svg>
+              {/* tooltip */}
+              {tooltip.show && hoverI != null && (
+                <div className="absolute text-xs rounded-md border bg-white shadow px-2 py-1" style={{ left: tooltip.x, top: tooltip.y }}>
+                  <div className="font-medium">Jour {dailySeries.labels[hoverI]}</div>
+                  <div className="text-emerald-700">CA: {fmtEUR(dailySeries.rev[hoverI])}</div>
+                  <div className="text-rose-700">Dépenses: {fmtEUR(dailySeries.exp[hoverI])}</div>
+                  <div className="text-blue-700">Marge: {fmtEUR(dailySeries.mar[hoverI])}</div>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -209,12 +269,18 @@ export default function Home() {
           const pertes = dailySeries.mar.filter(v => v < 0).reduce((s,v)=>s+v,0);
           const gainDays = dailySeries.mar.filter(v => v > 0).length;
           const lossDays = dailySeries.mar.filter(v => v < 0).length;
+          const n = dailySeries.labels.length || 1;
+          const avgMargin = (gains + pertes) / n;
+          const bestIdx = dailySeries.mar.reduce((bi, v, i) => v > dailySeries.mar[bi] ? i : bi, 0);
+          const worstIdx = dailySeries.mar.reduce((wi, v, i) => v < dailySeries.mar[wi] ? i : wi, 0);
           return (
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 text-sm">
               <div className="rounded border p-3"><div className="text-neutral-500">Jours de gain</div><div className="font-medium">{gainDays}</div></div>
               <div className="rounded border p-3"><div className="text-neutral-500">Jours de perte</div><div className="font-medium">{lossDays}</div></div>
               <div className="rounded border p-3"><div className="text-neutral-500">Total gains (EUR)</div><div className="font-medium text-emerald-700">{gains.toFixed(2)} €</div></div>
               <div className="rounded border p-3"><div className="text-neutral-500">Total pertes (EUR)</div><div className="font-medium text-rose-700">{Math.abs(pertes).toFixed(2)} €</div></div>
+              <div className="rounded border p-3"><div className="text-neutral-500">Marge moyenne</div><div className="font-medium">{avgMargin.toFixed(2)} €</div></div>
+              <div className="rounded border p-3"><div className="text-neutral-500">Meilleur/Pire jour</div><div className="font-medium">J{dailySeries.labels[bestIdx]} ({fmtEUR(dailySeries.mar[bestIdx])}) / J{dailySeries.labels[worstIdx]} ({fmtEUR(dailySeries.mar[worstIdx])})</div></div>
             </div>
           );
         })()}

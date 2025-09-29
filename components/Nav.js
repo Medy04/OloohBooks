@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -15,6 +16,14 @@ const links = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (_) {}
+    router.replace("/login");
+  }
   return (
     <nav className="border-b border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-6">
@@ -40,6 +49,10 @@ export default function Nav() {
             );
           })}
         </ul>
+        <div className="flex-1" />
+        <button onClick={logout} className="text-sm px-3 py-1.5 rounded-md border hover:bg-neutral-100 dark:hover:bg-neutral-900">
+          Se déconnecter
+        </button>
       </div>
     </nav>
   );
