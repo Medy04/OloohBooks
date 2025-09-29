@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function LoginContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,5 +68,13 @@ export default function LoginPage() {
         <div className="mt-4 text-xs text-neutral-500">Astuce: le code est fourni par l’administrateur.</div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen grid place-items-center text-sm text-neutral-500">Chargement…</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
