@@ -285,10 +285,10 @@ export default function ProductsPage() {
       </div>
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <button className="px-3 py-2 rounded-md bg-black text-white" onClick={() => setOpen(true)}>Ajouter un produit</button>
+        <button className="px-3 py-2 rounded-md border border-[#C5A029] bg-[#C5A029] text-white hover:bg-[#a78a22]" onClick={() => setOpen(true)}>Ajouter un produit</button>
         <button className="px-3 py-2 rounded-md border">Importer (CSV)</button>
         <button className="px-3 py-2 rounded-md border">Exporter (CSV)</button>
-        <button className="px-3 py-2 rounded-md border border-red-300 text-red-600" onClick={purgeAllProducts}>Purger</button>
+        <button className="px-3 py-2 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700" onClick={purgeAllProducts}>Purger</button>
       </div>
       {/* Filtres */}
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 grid gap-3 sm:grid-cols-3">
@@ -379,8 +379,8 @@ export default function ProductsPage() {
                   <td className="p-3 text-right">{p.stock ?? "—"}</td>
                   <td className="p-3">{Array.isArray(p.locations) && p.locations.length ? p.locations.join(", ") : "—"}</td>
                   <td className="p-3 text-right space-x-2">
-                    <button className="px-2 py-1 rounded-md border" onClick={() => openEditModal(p)}>Éditer</button>
-                    <button className="px-2 py-1 rounded-md border border-red-300 text-red-600" onClick={() => handleDeleteProduct(p.id)}>Supprimer</button>
+                    <button className="px-2 py-1 rounded-md border border-[#C5A029] bg-[#C5A029] text-white hover:bg-[#a78a22]" onClick={() => openEditModal(p)}>Éditer</button>
+                    <button className="px-2 py-1 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700" onClick={() => handleDeleteProduct(p.id)}>Supprimer</button>
                   </td>
                 </tr>
               ))

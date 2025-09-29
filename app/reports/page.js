@@ -25,7 +25,7 @@ export default function ReportsPage() {
       const { start, end } = monthRange(year, month);
       let salesQuery = supabase
         .from("sales")
-        .select("id, total_xof, location, payment_method, created_at, products(name, ref)")
+        .select("id, qty, total_xof, location, payment_method, created_at, products(name, ref)")
         .gte("created_at", start)
         .lt("created_at", end)
         .order("created_at", { ascending: false });
@@ -89,6 +89,57 @@ export default function ReportsPage() {
     }
     // convert to EUR for display
     return Array.from(map.entries()).map(([loc, xof]) => [loc, fromXOFtoEUR(xof)]);
+  }, [sales]);
+
+  const topProduct = useMemo(() => {
+    const qtyByProduct = new Map();
+    for (const s of sales) {
+      const name = s.products?.name || "—";
+      qtyByProduct.set(name, (qtyByProduct.get(name) || 0) + Number(s.qty || 0));
+    }
+    let best = ["—", 0];
+    for (const [name, q] of qtyByProduct.entries()) {
+      if (q > best[1]) best = [name, q];
+    }
+    return best; // [name, qty]
+  }, [sales]);
+
+  const top5Products = useMemo(() => {
+    const qtyByProduct = new Map();
+    for (const s of sales) {
+      const name = s.products?.name || "—";
+      qtyByProduct.set(name, (qtyByProduct.get(name) || 0) + Number(s.qty || 0));
+    }
+    return Array.from(qtyByProduct.entries())
+      .sort((a,b) => b[1] - a[1])
+      .slice(0,5);
+  }, [sales]);
+
+  const paymentUsage = useMemo(() => {
+    const cnt = new Map();
+    for (const s of sales) {
+      const m = s.payment_method || "—";
+      cnt.set(m, (cnt.get(m) || 0) + 1);
+    }
+    let best = ["—", 0];
+    for (const [m, c] of cnt.entries()) {
+      if (c > best[1]) best = [m, c];
+    }
+    return best; // [method, count]
+  }, [sales]);
+
+  const prolificLocations = useMemo(() => {
+    if (sales.length === 0) return { best: ["—", 0], worst: ["—", 0] };
+    const xofByLoc = new Map();
+    for (const s of sales) {
+      const loc = s.location || "—";
+      xofByLoc.set(loc, (xofByLoc.get(loc) || 0) + Number(s.total_xof || 0));
+    }
+    const arr = Array.from(xofByLoc.entries());
+    arr.sort((a,b) => b[1] - a[1]);
+    const best = arr[0];
+    const worst = arr[arr.length - 1];
+    return { best: [best[0], fromXOFtoEUR(best[1])], worst: [worst[0], fromXOFtoEUR(worst[1])] };
   }, [sales]);
 
   // Export helpers
@@ -157,6 +208,68 @@ export default function ReportsPage() {
         (marginEUR >= 0 ? (marginEUR * 655.957).toFixed(2) : "0.00"),
         (marginEUR < 0 ? (Math.abs(marginEUR) * 655.957).toFixed(2) : "0.00"),
       ],
+      // Top product
+      [
+        `${ym}-01`,
+        "SUMMARY_TOP_PRODUCT",
+        `Article le plus vendu: ${topProduct[0]} (qté: ${topProduct[1]})`,
+        "",
+        "",
+        "",
+        "0.00","0.00","0.00","0.00"
+      ],
+      // Most used payment method
+      [
+        `${ym}-01`,
+        "SUMMARY_TOP_PAYMENT",
+        `Moyen de paiement le plus utilisé: ${paymentUsage[0]} (nb: ${paymentUsage[1]})`,
+        "",
+        "",
+        "",
+        "0.00","0.00","0.00","0.00"
+      ],
+      // Best/Worst locations
+      [
+        `${ym}-01`,
+        "SUMMARY_BEST_LOCATION",
+        `Lieu le plus prolifique: ${prolificLocations.best[0]} (${prolificLocations.best[1].toFixed(2)} €)`,
+        "",
+        "",
+        "",
+        "0.00","0.00","0.00","0.00"
+      ],
+      [
+        `${ym}-01`,
+        "SUMMARY_WORST_LOCATION",
+        `Lieu le moins prolifique: ${prolificLocations.worst[0]} (${prolificLocations.worst[1].toFixed(2)} €)`,
+        "",
+        "",
+        "",
+        "0.00","0.00","0.00","0.00"
+      ],
+      // Top 5 produits (summary rows only for visibility)
+      ...top5Products.map(([name, qty], i) => [
+        `${ym}-01`,
+        `SUMMARY_TOP5_PRODUCT_${i+1}`,
+        `${name}`,
+        "",
+        "",
+        "",
+        "0.00","0.00","0.00","0.00"
+      ]),
+      // CA par lieu
+      ...byLocation.map(([loc, eur]) => [
+        `${ym}-01`,
+        "SUMMARY_CA_BY_LOCATION",
+        `CA ${loc}`,
+        "",
+        loc,
+        "",
+        eur.toFixed(2),
+        "0.00",
+        (eur * 655.957).toFixed(2),
+        "0.00",
+      ]),
     ];
     const saleRows = sales.map((s) => [
       new Date(s.created_at).toISOString(),
@@ -208,6 +321,19 @@ export default function ReportsPage() {
       <li>Dépenses (EUR): <strong>${totalExpensesEUR.toFixed(2)} €</strong></li>
       <li>Marge (EUR): <strong>${marginEUR.toFixed(2)} €</strong></li>
     </ul>
+    <h2>Indicateurs complémentaires</h2>
+    <ul>
+      <li>Article le plus vendu: <strong>${topProduct[0]}</strong> (qté ${topProduct[1]})</li>
+      <li>Moyen de paiement le plus utilisé: <strong>${paymentUsage[0]}</strong> (${paymentUsage[1]})</li>
+      <li>Lieu le plus prolifique: <strong>${prolificLocations.best[0]}</strong> (${prolificLocations.best[1].toFixed(2)} €)</li>
+      <li>Lieu le moins prolifique: <strong>${prolificLocations.worst[0]}</strong> (${prolificLocations.worst[1].toFixed(2)} €)</li>
+    </ul>
+
+    <h2>Top 5 produits (par quantité)</h2>
+    <table><thead><tr><th>Produit</th><th>Quantité</th></tr></thead><tbody>
+    ${top5Products.map(([name, qty]) => `<tr><td>${name}</td><td>${qty}</td></tr>`).join("")}
+    </tbody></table>
+
     <h2>CA par lieu (EUR)</h2>
     <table><thead><tr><th>Lieu</th><th>CA (EUR)</th></tr></thead><tbody>
     ${byLocation.map(([loc, val]) => `<tr><td>${loc}</td><td>${val.toFixed(2)} €</td></tr>`).join("")}

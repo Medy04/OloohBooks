@@ -180,12 +180,12 @@ export default function ExpensesPage() {
       </div>
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <button className="px-3 py-2 rounded-md bg-black text-white" onClick={() => setOpen(true)}>Nouvelle dépense</button>
+        <button className="px-3 py-2 rounded-md border border-[#C5A029] bg-[#C5A029] text-white hover:bg-[#a78a22]" onClick={() => setOpen(true)}>Nouvelle dépense</button>
         <button className="px-3 py-2 rounded-md border">Importer (CSV)</button>
         <button className="px-3 py-2 rounded-md border" onClick={exportCSV}>Exporter (CSV)</button>
         <button className="px-3 py-2 rounded-md border" onClick={exportPDF}>Exporter (PDF)</button>
         <button className="px-3 py-2 rounded-md border" onClick={exportAccounting}>Export comptable</button>
-        <button className="px-3 py-2 rounded-md border border-red-300 text-red-600" onClick={purgeAllExpenses}>Purger</button>
+        <button className="px-3 py-2 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700" onClick={purgeAllExpenses}>Purger</button>
       </div>
       {/* Filtres Mois/Année */}
       <div className="flex flex-wrap gap-2 items-center">

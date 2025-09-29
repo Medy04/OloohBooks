@@ -30,7 +30,7 @@ export default function Home() {
       const [salesRes, expRes] = await Promise.all([
         supabase
           .from("sales")
-          .select("id, total_xof, created_at")
+          .select("id, qty, total_xof, location, created_at, products(name, ref)")
           .gte("created_at", start)
           .lt("created_at", end),
         supabase
@@ -82,6 +82,39 @@ export default function Home() {
     const xof = sales.reduce((s, r) => s + Number(r.total_xof || 0), 0);
     return fromXOFtoEUR(xof);
   }, [sales]);
+
+  const top5Products = useMemo(() => {
+    const qtyByProduct = new Map();
+    for (const s of sales) {
+      const name = s.products?.name || "—";
+      qtyByProduct.set(name, (qtyByProduct.get(name) || 0) + Number(s.qty || 0));
+    }
+    return Array.from(qtyByProduct.entries())
+      .sort((a,b) => b[1] - a[1])
+      .slice(0,5);
+  }, [sales]);
+
+  const paymentBreakdown = useMemo(() => {
+    const cnt = new Map();
+    for (const s of sales) {
+      const m = s.payment_method || "—";
+      cnt.set(m, (cnt.get(m) || 0) + 1);
+    }
+    const arr = Array.from(cnt.entries()).sort((a,b) => b[1] - a[1]);
+    const max = arr.length ? arr[0][1] : 1;
+    return { arr, max };
+  }, [sales]);
+
+  const salesCountByLocation = useMemo(() => {
+    const cnt = new Map();
+    for (const s of sales) {
+      const loc = s.location || "—";
+      cnt.set(loc, (cnt.get(loc) || 0) + 1);
+    }
+    const arr = Array.from(cnt.entries()).sort((a,b) => b[1] - a[1]);
+    const max = arr.length ? arr[0][1] : 1;
+    return { arr, max };
+  }, [sales]);
   const expensesMonthEUR = useMemo(() => {
     const xof = expenses.reduce((s, e) => s + Number(e.amount_xof || 0), 0);
     return fromXOFtoEUR(xof);
@@ -113,6 +146,43 @@ export default function Home() {
     return { rev, exp, mar, labels };
   }, [sales, expenses, month, year]);
 
+  // Aggregates for stats: top product, CA by location, best/worst location
+  const byLocation = useMemo(() => {
+    const map = new Map();
+    for (const r of sales) {
+      const k = r.location || "—";
+      map.set(k, (map.get(k) || 0) + Number(r.total_xof || 0));
+    }
+    return Array.from(map.entries()).map(([loc, xof]) => [loc, fromXOFtoEUR(xof)]);
+  }, [sales]);
+
+  const topProduct = useMemo(() => {
+    const qtyByProduct = new Map();
+    for (const s of sales) {
+      const name = s.products?.name || "—";
+      qtyByProduct.set(name, (qtyByProduct.get(name) || 0) + Number(s.qty || 0));
+    }
+    let best = ["—", 0];
+    for (const [name, q] of qtyByProduct.entries()) {
+      if (q > best[1]) best = [name, q];
+    }
+    return best;
+  }, [sales]);
+
+  const prolificLocations = useMemo(() => {
+    if (sales.length === 0) return { best: ["—", 0], worst: ["—", 0] };
+    const xofByLoc = new Map();
+    for (const s of sales) {
+      const loc = s.location || "—";
+      xofByLoc.set(loc, (xofByLoc.get(loc) || 0) + Number(s.total_xof || 0));
+    }
+    const arr = Array.from(xofByLoc.entries());
+    arr.sort((a,b) => b[1] - a[1]);
+    const best = arr[0];
+    const worst = arr[arr.length - 1];
+    return { best: [best[0], fromXOFtoEUR(best[1])], worst: [worst[0], fromXOFtoEUR(worst[1])] };
+  }, [sales]);
+
   function buildPath(values, width, height, padding) {
     const n = values.length || 1;
     const maxVal = Math.max(1, ...values);
@@ -140,18 +210,115 @@ export default function Home() {
       <div className="rounded-md border bg-neutral-50 dark:bg-neutral-950 p-3 text-sm">
         <span className="font-medium">Bonjour OloohBooks admin</span>, bienvenue sur la plateforme de gestion comptable de Olooh.
       </div>
+      {/* En-tête + actions rapides */}
       <div>
         <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          Suivez vos ventes et dépenses par canal et par lieu.
-        </p>
+        <p className="text-sm text-neutral-500 mt-1">Suivez vos ventes et dépenses par canal et par lieu.</p>
       </div>
-      {/* Quick actions */}
       <div className="flex flex-wrap gap-2">
-        <Link href="/sales" className="px-3 py-2 rounded-md bg-black text-white">Nouvelle vente</Link>
+        <Link href="/sales" className="px-3 py-2 rounded-md border border-[#C5A029] bg-[#C5A029] text-white hover:bg-[#a78a22]">Nouvelle vente</Link>
         <Link href="/expenses" className="px-3 py-2 rounded-md border">Nouvelle dépense</Link>
         <Link href="/products" className="px-3 py-2 rounded-md border">Ajouter un produit</Link>
         <button onClick={load} className="px-3 py-2 rounded-md border">Rafraîchir</button>
+      </div>
+      {/* Période */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <select className="rounded-md border px-3 py-2 bg-transparent" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
+          ))}
+        </select>
+        <select className="rounded-md border px-3 py-2 bg-transparent" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+          {Array.from({ length: 7 }, (_, i) => now.getFullYear() - i).map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+      {/* Statistiques complémentaires */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-lg border p-4">
+          <div className="font-semibold mb-2">CA par lieu (EUR)</div>
+          {byLocation.length === 0 ? (
+            <div className="text-sm text-neutral-500">Aucune vente sur la période.</div>
+          ) : (
+            <ul className="text-sm space-y-1">
+              {byLocation.sort((a,b)=>b[1]-a[1]).map(([loc, eur]) => (
+                <li key={loc} className="flex justify-between"><span>{loc}</span><span>{eur.toFixed(2)} €</span></li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="font-semibold mb-2">Lieux prolifiques</div>
+          <div className="text-sm">
+            <div><span className="text-neutral-500">Le plus prolifique:</span> <span className="font-medium">{prolificLocations.best[0]}</span> ({fmtEUR(prolificLocations.best[1]||0)})</div>
+            <div className="mt-1"><span className="text-neutral-500">Le moins prolifique:</span> <span className="font-medium">{prolificLocations.worst[0]}</span> ({fmtEUR(prolificLocations.worst[1]||0)})</div>
+          </div>
+          {/* Placeholder top product: requires join on products in dashboard query to be accurate */}
+          <div className="mt-3 text-sm"><span className="text-neutral-500">Article le plus vendu:</span> <span className="font-medium">{topProduct[0]}</span> {topProduct[1] ? `(qté ${topProduct[1]})` : ''}</div>
+        </div>
+      </div>
+
+      {/* Top 5 produits & Répartition moyens de paiement */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-lg border p-4">
+          <div className="font-semibold mb-2">Top 5 produits (par quantité)</div>
+          {top5Products.length === 0 ? (
+            <div className="text-sm text-neutral-500">Pas encore de ventes ce mois.</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b"><th className="py-1 text-left">Produit</th><th className="py-1 text-right">Qté</th></tr>
+              </thead>
+              <tbody>
+                {top5Products.map(([name, qty]) => (
+                  <tr key={name} className="border-b">
+                    <td className="py-1">{name}</td>
+                    <td className="py-1 text-right">{qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="font-semibold mb-2">Moyens de paiement (nombre de ventes)</div>
+          {paymentBreakdown.arr.length === 0 ? (
+            <div className="text-sm text-neutral-500">Pas de ventes sur la période.</div>
+          ) : (
+            <ul className="text-sm space-y-1">
+              {paymentBreakdown.arr.map(([m, c]) => (
+                <li key={m} className="flex items-center gap-2">
+                  <div className="w-24 text-neutral-600">{m}</div>
+                  <div className="flex-1 h-2 rounded bg-neutral-200">
+                    <div className="h-2 rounded bg-emerald-600" style={{ width: `${(c / paymentBreakdown.max) * 100}%` }} />
+                  </div>
+                  <div className="w-8 text-right">{c}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Histogramme: Ventes par lieu (compte) */}
+      <div className="rounded-lg border p-4">
+        <div className="font-semibold mb-2">Ventes par lieu (nombre)</div>
+        {salesCountByLocation.arr.length === 0 ? (
+          <div className="text-sm text-neutral-500">Pas de ventes sur la période.</div>
+        ) : (
+          <ul className="text-sm space-y-1">
+            {salesCountByLocation.arr.map(([loc, c]) => (
+              <li key={loc} className="flex items-center gap-2">
+                <div className="w-32 text-neutral-600">{loc}</div>
+                <div className="flex-1 h-2 rounded bg-neutral-200">
+                  <div className="h-2 rounded bg-blue-600" style={{ width: `${(c / salesCountByLocation.max) * 100}%` }} />
+                </div>
+                <div className="w-8 text-right">{c}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {/* Période + KPI cards */}
       <div className="flex flex-wrap gap-2 items-center">
